@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -366,7 +366,7 @@ var KM=[{key:'weight',label:'Weight'},{key:'smm',label:'Skeletal muscle'},{key:'
 
 function ranges(p){var f=p.sex==='female';return{weight:{min:f?108:140,max:f?155:196,label:'Healthy weight range'},pbf:{min:f?14:6,max:f?24:17,label:f?'Healthy body fat % for women':'Healthy body fat % for men'},bmi:{min:18.5,max:24.9,label:'Normal BMI range'},smm:{min:f?50:70,max:f?75:110,label:'Good skeletal muscle mass'},bfm:{min:f?12:5,max:f?32:20,label:'Healthy body fat mass'},lbm:{min:f?95:130,max:f?130:175,label:'Healthy lean body mass'},tbw:{min:f?70:90,max:f?90:110,label:'Healthy total body water'},ecwtbw:{min:0.36,max:0.39,label:'Normal ECW/TBW (0.36-0.39)'},bmr:{min:f?1350:1600,max:f?1750:2200,label:'Normal BMR for age and size'},vfl:{min:1,max:9,label:'Healthy visceral fat (under 10)'},smi:{min:f?5.7:7.0,max:f?9.0:11.0,label:'Normal SMI'}};}
 
-var profile=null,entries=[],activeM='weight',chart=null,imgB64=null,setupSex='female',profSex='female';
+var profile=null,entries=[],activeM='weight',chart=null,imgB64=null,imgType='image/jpeg',setupSex='female',profSex='female';
 try{profile=JSON.parse(localStorage.getItem('ib-p'));}catch(e){}
 try{entries=JSON.parse(localStorage.getItem('ib-e'))||[];}catch(e){}
 
@@ -447,7 +447,7 @@ document.getElementById('hav').addEventListener('click',function(){openProf();})
 document.getElementById('img-input').addEventListener('change',function(e){
   var file=e.target.files[0];if(!file)return;
   var r=new FileReader();r.onload=function(ev){
-    imgB64=ev.target.result.split(',')[1];
+    var rawMime=ev.target.result.split(',')[0].split(':')[1].split(';')[0];imgType=(['image/jpeg','image/png','image/gif','image/webp'].indexOf(rawMime)>=0)?rawMime:'image/jpeg';imgB64=ev.target.result.split(',')[1];
     var pv=document.getElementById('preview');pv.src=ev.target.result;pv.style.display='block';
     document.getElementById('ai-btn').style.display='block';
     document.getElementById('status-bar').textContent='Looking good! Tap below to scan.';
@@ -460,13 +460,15 @@ document.getElementById('ai-btn').addEventListener('click',function(){
   var btn=document.getElementById('ai-btn');
   var st=document.getElementById('status-bar');
   btn.disabled=true;st.innerHTML='<span class="spinner"></span>Reading your InBody sheet...';
-  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imgB64}},{type:'text',text:'You are reading an InBody 570 result sheet. Extract every numeric value and return ONLY a valid JSON object with these keys (null if not visible): date (YYYY-MM-DD from test date), icw, ecw, tbw, dlm, bfm, lbm, weight, smm, pbf, bmi, ecwtbw, bmr, vfl, smi, ra_lbs, ra_pct, la_lbs, la_pct, tr_lbs, tr_pct, rl_lbs, rl_pct, ll_lbs, ll_pct, fra_lbs, fra_pct, fla_lbs, fla_pct, ftr_lbs, ftr_pct, frl_lbs, frl_pct, fll_lbs, fll_pct. Return ONLY the JSON.'}]}]})})
+  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:imgType,data:imgB64}},{type:'text',text:'You are reading an InBody 570 result sheet. Extract every numeric value and return ONLY a valid JSON object with these keys (null if not visible): date (YYYY-MM-DD from test date), icw, ecw, tbw, dlm, bfm, lbm, weight, smm, pbf, bmi, ecwtbw, bmr, vfl, smi, ra_lbs, ra_pct, la_lbs, la_pct, tr_lbs, tr_pct, rl_lbs, rl_pct, ll_lbs, ll_pct, fra_lbs, fra_pct, fla_lbs, fla_pct, ftr_lbs, ftr_pct, frl_lbs, frl_pct, fll_lbs, fll_pct. Return ONLY the JSON.'}]}]})})
   .then(function(r){return r.json();})
   .then(function(d){
+    if(d.error){st.textContent='Scan failed: '+d.error.message;btn.disabled=false;return;}
+    if(!d.content||!d.content.length){st.textContent='No response received. Try again.';btn.disabled=false;return;}
     var t=d.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
     var p=JSON.parse(t.replace(/```json|```/g,'').trim());
     fillF(p);st.innerHTML='<span style="color:var(--mint)">&#x2713;</span> Done! Review and save.';btn.style.display='none';
-  }).catch(function(){st.textContent='Could not read it. Try again or enter manually.';btn.disabled=false;});
+  }).catch(function(err){st.textContent='Network error. Make sure you are online and try again.';btn.disabled=false;});
 });
 
 function sf(id,v){if(v==null)return;var el=document.getElementById(id);if(!el)return;el.value=v;el.classList.add('field-filled');}
