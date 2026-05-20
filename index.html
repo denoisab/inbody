@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
@@ -460,7 +460,7 @@ document.getElementById('ai-btn').addEventListener('click',function(){
   var btn=document.getElementById('ai-btn');
   var st=document.getElementById('status-bar');
   btn.disabled=true;st.innerHTML='<span class="spinner"></span>Reading your InBody sheet...';
-  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imgB64}},{type:'text',text:'You are reading an InBody 570 result sheet. Extract every numeric value and return ONLY a valid JSON object with these keys (null if not visible): date (YYYY-MM-DD from test date), icw, ecw, tbw, dlm, bfm, lbm, weight, smm, pbf, bmi, ecwtbw, bmr, vfl, smi, ra_lbs, ra_pct, la_lbs, la_pct, tr_lbs, tr_pct, rl_lbs, rl_pct, ll_lbs, ll_pct, fra_lbs, fra_pct, fla_lbs, fla_pct, ftr_lbs, ftr_pct, frl_lbs, frl_pct, fll_lbs, fll_pct. Return ONLY the JSON.'}]}]})})
+  fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','x-api-key':'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','anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:'image/jpeg',data:imgB64}},{type:'text',text:'You are reading an InBody 570 result sheet. Extract every numeric value and return ONLY a valid JSON object with these keys (null if not visible): date (YYYY-MM-DD from test date), icw, ecw, tbw, dlm, bfm, lbm, weight, smm, pbf, bmi, ecwtbw, bmr, vfl, smi, ra_lbs, ra_pct, la_lbs, la_pct, tr_lbs, tr_pct, rl_lbs, rl_pct, ll_lbs, ll_pct, fra_lbs, fra_pct, fla_lbs, fla_pct, ftr_lbs, ftr_pct, frl_lbs, frl_pct, fll_lbs, fll_pct. Return ONLY the JSON.'}]}]})})
   .then(function(r){return r.json();})
   .then(function(d){
     var t=d.content.filter(function(b){return b.type==='text';}).map(function(b){return b.text;}).join('');
